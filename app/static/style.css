@@ -503,6 +503,15 @@ body {
     line-height: 1.6;
 }
 
+#chat-content-wrapper:not(.empty-state) #chat-empty-panel {
+    display: none;
+}
+
+#chat-content-wrapper.empty-state #chat-messages-container {
+    display: none;
+}
+
+
 /* Active Chat Messages List */
 #chat-messages-container {
     width: 100%;
