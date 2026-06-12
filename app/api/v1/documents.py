@@ -94,8 +94,11 @@ def list_documents(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    docs = db.query(Document).filter(Document.owner_id == current_user.id).all()
+    docs = db.query(Document).filter(
+        Document.owner_id == current_user.id
+    ).order_by(Document.created_at.desc()).all()
     return docs
+
 
 # 3. Get Specific Document Status
 @router.get("/{document_id}", response_model=DocumentResponse)
