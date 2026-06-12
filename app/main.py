@@ -1,0 +1,40 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from app.core.config import settings
+from app.db.session import engine, Base
+from app.api.v1.auth import router as auth_router
+from app.api.v1.documents import router as documents_router
+from app.api.v1.chat import router as chat_router
+
+# Auto-create SQLAlchemy models tables on start
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
+app.include_router(documents_router, prefix=f"{settings.API_V1_STR}/documents", tags=["Documents"])
+app.include_router(chat_router, prefix=f"{settings.API_V1_STR}/chat", tags=["Chat & RAG"])
+
+# Serve frontend static assets
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+@app.get("/")
+def read_root():
+    return {"message": f"Welcome to {settings.PROJECT_NAME} API. Visit /docs for Swagger UI."}
