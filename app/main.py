@@ -31,10 +31,12 @@ app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Aut
 app.include_router(documents_router, prefix=f"{settings.API_V1_STR}/documents", tags=["Documents"])
 app.include_router(chat_router, prefix=f"{settings.API_V1_STR}/chat", tags=["Chat & RAG"])
 
+from fastapi.responses import FileResponse
+
 # Serve frontend static assets
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
 @app.get("/")
 def read_root():
-    return {"message": f"Welcome to {settings.PROJECT_NAME} API. Visit /docs for Swagger UI."}
+    return FileResponse("app/static/index.html")
