@@ -267,7 +267,11 @@ async function handleFileUpload(file) {
         });
         
         if (res.ok) {
-            loadDocuments();
+            const doc = await res.json();
+            activeDocId = doc.id;
+            activeConversationId = null;
+            await loadDocuments();
+            resetChatWorkspace();
         } else {
             const data = await res.json();
             alert(`Upload failed: ${data.detail || 'Unknown error'}`);
@@ -444,8 +448,18 @@ function appendMessageBubble(role, text, sources = null) {
         </div>
     `;
     
-    // Set textContent to avoid XSS issues, but preserve newlines
-    bubble.querySelector('.message-text').textContent = text;
+    const messageTextElem = bubble.querySelector('.message-text');
+    if (role === 'assistant' && !text) {
+        messageTextElem.innerHTML = `
+            <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        `;
+    } else {
+        messageTextElem.textContent = text;
+    }
     
     container.appendChild(bubble);
     return bubble;
