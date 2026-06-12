@@ -65,16 +65,34 @@ class RAGPipeline:
         context = "\n\n---\n\n".join(context_parts)
         sources.sort()
 
-        # 3. Augment prompt and run generation
-        system_instruction = (
-            "You are DocBrain, an advanced AI document assistant. Your job is to answer "
-            "questions based ONLY on the provided context. If the answer cannot be found "
-            "in the context, politely state that the answer is not present in the document. "
-            "Do not use external knowledge or fabricate facts. Always reference the page "
-            "numbers of the context you used in your response."
+        # 3. Format metadata info
+        def format_file_size(size_in_bytes: int) -> str:
+            if size_in_bytes < 1024:
+                return f"{size_in_bytes} Bytes"
+            elif size_in_bytes < 1024 * 1024:
+                return f"{size_in_bytes / 1024:.2f} KB"
+            else:
+                return f"{size_in_bytes / (1024 * 1024):.2f} MB"
+
+        metadata_info = (
+            f"Document Metadata:\n"
+            f"- Filename: {doc.original_filename}\n"
+            f"- File Size: {format_file_size(doc.file_size)}\n"
+            f"- Total Pages: {doc.page_count}\n"
+            f"- Total Chunks: {doc.chunk_count}\n"
         )
 
-        prompt = f"Document Context:\n{context}\n\nQuestion: {question}\n\nAnswer:"
+        # 4. Augment prompt and run generation
+        system_instruction = (
+            "You are DocBrain, an advanced AI document assistant. Your job is to answer "
+            "questions based ONLY on the provided document context or the document metadata. "
+            "If the answer cannot be found in the context or metadata, politely state that the "
+            "answer is not present in the document. Do not use external knowledge or fabricate facts. "
+            "Always reference the page numbers of the context you used in your response (except when "
+            "answering questions purely about file metadata like file size or page count)."
+        )
+
+        prompt = f"{metadata_info}\n\nDocument Context:\n{context}\n\nQuestion: {question}\n\nAnswer:"
 
         # Stream generator
         stream = self.ai_service.generate_stream(
@@ -83,3 +101,4 @@ class RAGPipeline:
         )
 
         return sources, stream
+
