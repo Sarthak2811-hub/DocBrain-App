@@ -440,9 +440,14 @@ function appendMessageBubble(role, text, sources = null) {
         `;
     }
 
+    let loadingClass = '';
+    if (role === 'assistant' && !text) {
+        loadingClass = 'loading';
+    }
+
     bubble.innerHTML = `
         <div class="bubble-avatar ${avatarClass}">${initials}</div>
-        <div class="bubble-text-content">
+        <div class="bubble-text-content ${loadingClass}">
             <div class="message-text"></div>
             ${sourceHtml}
         </div>
@@ -458,7 +463,7 @@ function appendMessageBubble(role, text, sources = null) {
             </div>
         `;
     } else {
-        messageTextElem.textContent = text;
+        messageTextElem.textContent = text.trim();
     }
     
     container.appendChild(bubble);
@@ -502,14 +507,88 @@ async function handleChatSubmit(e) {
         });
 
         if (!response.ok) {
+            bubbleTextContent.classList.remove('loading');
+            textNode.classList.remove('typing');
             textNode.textContent = "Error: Failed to fetch response from server.";
+            input.removeAttribute('disabled');
+            document.getElementById('chat-send-btn').removeAttribute('disabled');
+            input.focus();
             return;
         }
 
-        // Setup Stream reader
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+        let sourcesToRender = null;
+        let currentEvent = null;
+        let hasProcessedDataInEvent = false;
+
+        // Smooth Typing Queue Setup
+        let renderQueue = [];
+        let renderTimer = null;
+        let streamFinished = false;
+
+        function finishMessage() {
+            textNode.textContent = textNode.textContent.trim();
+            textNode.classList.remove('typing');
+
+            if (sourcesToRender && sourcesToRender.length > 0) {
+                const citationDiv = document.createElement('div');
+                citationDiv.className = 'citation-panel';
+                citationDiv.innerHTML = `
+                    <span class="citation-title"><i class="fa-solid fa-book-open"></i> Sources:</span>
+                    ${sourcesToRender.map(p => `<span class="citation-chip">Page ${p}</span>`).join('')}
+                `;
+                bubbleTextContent.appendChild(citationDiv);
+                scrollToBottomIfNeeded();
+            }
+
+            input.removeAttribute('disabled');
+            document.getElementById('chat-send-btn').removeAttribute('disabled');
+            input.focus();
+        }
+
+        function processRenderQueue() {
+            if (renderQueue.length === 0) {
+                if (streamFinished) {
+                    finishMessage();
+                } else {
+                    renderTimer = null;
+                }
+                return;
+            }
+
+            // Dynamically speed up typing if the queue grows large
+            let charsToRender = 1;
+            if (renderQueue.length > 120) {
+                charsToRender = 5;
+            } else if (renderQueue.length > 60) {
+                charsToRender = 3;
+            } else if (renderQueue.length > 20) {
+                charsToRender = 2;
+            }
+
+            let textToAppend = '';
+            for (let i = 0; i < charsToRender; i++) {
+                if (renderQueue.length > 0) {
+                    textToAppend += renderQueue.shift();
+                }
+            }
+
+            textNode.textContent += textToAppend;
+            scrollToBottomIfNeeded();
+
+            renderTimer = setTimeout(processRenderQueue, 15); // Smooth 15ms typing delay
+        }
+
+        function queueText(text) {
+            for (const char of text) {
+                renderQueue.push(char);
+            }
+            if (!renderTimer) {
+                processRenderQueue();
+            }
+        }
 
         while (true) {
             const { value, done } = await reader.read();
@@ -520,46 +599,66 @@ async function handleChatSubmit(e) {
             buffer = lines.pop(); // Keep partial line in buffer
 
             for (const line of lines) {
-                const cleanLine = line.trim();
+                // Remove trailing carriage return (\r) if present
+                const cleanLine = line.endsWith('\r') ? line.slice(0, -1) : line;
                 if (!cleanLine) continue;
 
                 if (cleanLine.startsWith('event:')) {
-                    // Find matching data line
-                    const eventType = cleanLine.replace('event:', '').trim();
-                    const lineIdx = lines.indexOf(line);
-                    const nextLine = lines[lineIdx + 1] || buffer;
+                    currentEvent = cleanLine.slice(6).trim();
+                    hasProcessedDataInEvent = false;
+                } else if (cleanLine.startsWith('data:')) {
+                    let dataStr = cleanLine;
+                    if (dataStr.startsWith('data: ')) {
+                        dataStr = dataStr.slice(6);
+                    } else {
+                        dataStr = dataStr.slice(5);
+                    }
                     
-                    if (nextLine && nextLine.trim().startsWith('data:')) {
-                        const dataStr = nextLine.trim().replace('data:', '').trim();
-                        
-                        if (eventType === 'metadata') {
-                            const meta = JSON.parse(dataStr);
-                            activeConversationId = meta.conversation_id;
-                            
-                            // Render Sources list if available
-                            if (meta.sources && meta.sources.length > 0) {
-                                const citationDiv = document.createElement('div');
-                                citationDiv.className = 'citation-panel';
-                                citationDiv.innerHTML = `
-                                    <span class="citation-title"><i class="fa-solid fa-book-open"></i> Sources:</span>
-                                    ${meta.sources.map(p => `<span class="citation-chip">Page ${p}</span>`).join('')}
-                                `;
-                                bubbleTextContent.appendChild(citationDiv);
-                            }
-                            loadConversations(); // Reload sidebar to show title if new
-                        } else if (eventType === 'chunk') {
-                            // Append word tokens
-                            textNode.textContent += dataStr;
-                            scrollToBottom();
+                    if (currentEvent === 'metadata') {
+                        const meta = JSON.parse(dataStr);
+                        activeConversationId = meta.conversation_id;
+                        sourcesToRender = meta.sources;
+                        loadConversations(); // Reload sidebar to show title if new
+                    } else if (currentEvent === 'chunk') {
+                        if (bubbleTextContent.classList.contains('loading')) {
+                            bubbleTextContent.classList.remove('loading');
                         }
+                        if (!textNode.classList.contains('typing')) {
+                            textNode.classList.add('typing');
+                        }
+                        
+                        let chunkText = '';
+                        if (hasProcessedDataInEvent) {
+                            chunkText += '\n';
+                        }
+                        chunkText += dataStr;
+                        queueText(chunkText);
+                        hasProcessedDataInEvent = true;
+                    } else if (currentEvent === 'error') {
+                        if (bubbleTextContent.classList.contains('loading')) {
+                            bubbleTextContent.classList.remove('loading');
+                        }
+                        textNode.classList.remove('typing');
+                        textNode.textContent = "Error: " + dataStr;
+                        input.removeAttribute('disabled');
+                        document.getElementById('chat-send-btn').removeAttribute('disabled');
+                        input.focus();
+                        return;
                     }
                 }
             }
         }
+
+        // Stream completed
+        streamFinished = true;
+        if (renderQueue.length === 0 && !renderTimer) {
+            finishMessage();
+        }
+
     } catch (err) {
+        bubbleTextContent.classList.remove('loading');
+        textNode.classList.remove('typing');
         textNode.textContent = "Error: Lost server connection during stream.";
-    } finally {
-        // Enable inputs
         input.removeAttribute('disabled');
         document.getElementById('chat-send-btn').removeAttribute('disabled');
         input.focus();
@@ -570,6 +669,24 @@ function scrollToBottom() {
     const panel = document.getElementById('chat-content-wrapper');
     panel.scrollTop = panel.scrollHeight;
 }
+
+let scrollPending = false;
+function scrollToBottomIfNeeded() {
+    if (scrollPending) return;
+    scrollPending = true;
+    requestAnimationFrame(() => {
+        const panel = document.getElementById('chat-content-wrapper');
+        if (panel) {
+            // Check if user is scrolled near the bottom (within 150px threshold)
+            const isNearBottom = panel.scrollHeight - panel.scrollTop - panel.clientHeight < 150;
+            if (isNearBottom) {
+                panel.scrollTop = panel.scrollHeight;
+            }
+        }
+        scrollPending = false;
+    });
+}
+
 
 function updateChatHeader() {
     const header = document.getElementById('chat-header');

@@ -527,11 +527,65 @@ body {
     gap: 15px;
     align-items: flex-start;
     animation: fadeIn 0.3s ease-out;
+    width: 100%;
 }
 
+/* User Message: Aligned to the right, inside a box, hide user avatar */
+.message-bubble.user {
+    justify-content: flex-end;
+}
+
+.message-bubble.user .bubble-avatar {
+    display: none;
+}
+
+.message-bubble.user .bubble-text-content {
+    background: rgba(99, 102, 241, 0.15); /* Translucent indigo bubble */
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: 18px 18px 2px 18px; /* Rounded chat bubble style */
+    padding: 12px 18px;
+    width: fit-content; /* Dynamic width fitting content */
+    max-width: 70%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Assistant Message: Left-aligned, no box container (ChatGPT style) */
+.message-bubble.assistant {
+    justify-content: flex-start;
+}
+
+.message-bubble.assistant .bubble-text-content {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 8px 0; /* Align text vertically with avatar */
+    max-width: calc(100% - 51px);
+    border-radius: 0;
+}
+
+/* Typing Cursor (ChatGPT style) */
+.message-text.typing::after {
+    content: "▊";
+    display: inline-block;
+    margin-left: 2px;
+    color: #10b981; /* Green color matching assistant avatar */
+    font-size: 0.95rem;
+    vertical-align: middle;
+    animation: blink 0.8s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+
+
+
+
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .bubble-avatar {
@@ -558,21 +612,16 @@ body {
 }
 
 .bubble-text-content {
-    flex-grow: 1;
-    min-width: 0;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--panel-border);
-    padding: 16px 20px;
-    border-radius: 12px;
     font-size: 0.95rem;
     line-height: 1.6;
+    word-break: break-word;
+}
+
+.message-text {
     white-space: pre-wrap;
 }
 
-.message-bubble.user .bubble-text-content {
-    background: rgba(99, 102, 241, 0.1);
-    border-color: rgba(99, 102, 241, 0.2);
-}
+
 
 /* Citations display style */
 .citation-panel {
