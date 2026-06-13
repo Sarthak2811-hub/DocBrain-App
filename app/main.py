@@ -26,6 +26,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Disable caching for static files during development/testing
+@app.middleware("http")
+async def add_no_cache_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 # Include routers
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
 app.include_router(documents_router, prefix=f"{settings.API_V1_STR}/documents", tags=["Documents"])

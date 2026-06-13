@@ -491,7 +491,11 @@ function appendMessageBubble(role, text, sources = null) {
             </div>
         `;
     } else {
-        messageTextElem.textContent = text.trim();
+        if (role === 'assistant' && window.marked && typeof window.marked.parse === 'function') {
+            messageTextElem.innerHTML = window.marked.parse(text.trim());
+        } else {
+            messageTextElem.textContent = text.trim();
+        }
     }
     
     // Bind Action Buttons Click Handlers
@@ -645,12 +649,15 @@ async function handleChatSubmit(e) {
         let renderQueue = [];
         let renderTimer = null;
         let streamFinished = false;
+        let accumulatedRawText = '';
 
         function finishMessage() {
-            textNode.textContent = textNode.textContent.trim();
+            if (window.marked && typeof window.marked.parse === 'function') {
+                textNode.innerHTML = window.marked.parse(accumulatedRawText.trim());
+            } else {
+                textNode.textContent = accumulatedRawText.trim();
+            }
             textNode.classList.remove('typing');
-
-
 
             input.removeAttribute('disabled');
             document.getElementById('chat-send-btn').removeAttribute('disabled');
@@ -684,7 +691,12 @@ async function handleChatSubmit(e) {
                 }
             }
 
-            textNode.textContent += textToAppend;
+            accumulatedRawText += textToAppend;
+            if (window.marked && typeof window.marked.parse === 'function') {
+                textNode.innerHTML = window.marked.parse(accumulatedRawText);
+            } else {
+                textNode.textContent = accumulatedRawText;
+            }
             scrollToBottomIfNeeded();
 
             renderTimer = setTimeout(processRenderQueue, 15); // Smooth 15ms typing delay

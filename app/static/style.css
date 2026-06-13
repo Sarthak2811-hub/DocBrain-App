@@ -618,7 +618,68 @@ body {
 }
 
 .message-text {
+    word-break: break-word;
+}
+
+/* User message raw text stays pre-wrap */
+.message-bubble.user .message-text {
     white-space: pre-wrap;
+}
+
+/* Markdown Specific Elements in Assistant Responses */
+.message-bubble.assistant .message-text {
+    white-space: normal;
+}
+
+.message-text p {
+    margin-bottom: 0.8em;
+}
+
+.message-text p:last-child {
+    margin-bottom: 0;
+}
+
+.message-text ul, .message-text ol {
+    margin-bottom: 0.8em;
+    padding-left: 20px;
+}
+
+.message-text li {
+    margin-bottom: 0.4em;
+}
+
+.message-text strong {
+    font-weight: 600;
+    color: white;
+}
+
+.message-text em {
+    font-style: italic;
+}
+
+.message-text code {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: #f43f5e; /* Rose-colored code highlights */
+}
+
+.message-text pre {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin-bottom: 0.8em;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.message-text pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+    font-size: 0.85rem;
 }
 
 
