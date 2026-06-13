@@ -421,8 +421,12 @@ function resetChatWorkspace() {
 
 function appendMessageBubble(role, text, sources = null) {
     const container = document.getElementById('chat-messages-container');
+    if (!container) return null;
+    
     const wrapper = document.getElementById('chat-content-wrapper');
-    wrapper.className = ''; // Remove empty state display class
+    if (wrapper) {
+        wrapper.className = ''; // Remove empty state display class
+    }
     
     const bubble = document.createElement('div');
     bubble.className = `message-bubble ${role}`;
@@ -431,27 +435,51 @@ function appendMessageBubble(role, text, sources = null) {
     const avatarClass = role === 'user' ? 'user-avatar' : 'assistant-avatar';
     
     let sourceHtml = '';
-    if (sources && sources.length > 0) {
-        sourceHtml = `
-            <div class="citation-panel">
-                <span class="citation-title"><i class="fa-solid fa-book-open"></i> Sources:</span>
-                ${sources.map(p => `<span class="citation-chip">Page ${p}</span>`).join('')}
-            </div>
-        `;
-    }
 
     let loadingClass = '';
     if (role === 'assistant' && !text) {
         loadingClass = 'loading';
     }
 
-    bubble.innerHTML = `
-        <div class="bubble-avatar ${avatarClass}">${initials}</div>
-        <div class="bubble-text-content ${loadingClass}">
-            <div class="message-text"></div>
-            ${sourceHtml}
-        </div>
-    `;
+    let actionsHtml = '';
+    if (role === 'user') {
+        actionsHtml = `
+            <div class="message-actions">
+                <button class="action-btn copy-btn" title="Copy message"><i class="fa-regular fa-copy"></i></button>
+                <button class="action-btn edit-btn" title="Edit message"><i class="fa-regular fa-pen-to-square"></i></button>
+            </div>
+        `;
+    } else if (role === 'assistant') {
+        actionsHtml = `
+            <div class="message-actions">
+                <button class="action-btn copy-btn" title="Copy message"><i class="fa-regular fa-copy"></i></button>
+            </div>
+        `;
+    }
+
+    if (role === 'user') {
+        bubble.innerHTML = `
+            <div class="bubble-avatar ${avatarClass}">${initials}</div>
+            <div class="bubble-wrapper user-wrapper">
+                <div class="bubble-text-content ${loadingClass}">
+                    <div class="message-text"></div>
+                    ${sourceHtml}
+                </div>
+                ${actionsHtml}
+            </div>
+        `;
+    } else {
+        bubble.innerHTML = `
+            <div class="bubble-avatar ${avatarClass}">${initials}</div>
+            <div class="bubble-wrapper assistant-wrapper">
+                <div class="bubble-text-content ${loadingClass}">
+                    <div class="message-text"></div>
+                    ${sourceHtml}
+                </div>
+                ${actionsHtml}
+            </div>
+        `;
+    }
     
     const messageTextElem = bubble.querySelector('.message-text');
     if (role === 'assistant' && !text) {
@@ -464,6 +492,96 @@ function appendMessageBubble(role, text, sources = null) {
         `;
     } else {
         messageTextElem.textContent = text.trim();
+    }
+    
+    // Bind Action Buttons Click Handlers
+    const copyBtn = bubble.querySelector('.copy-btn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(messageTextElem.textContent);
+                const icon = copyBtn.querySelector('i');
+                icon.className = 'fa-solid fa-check';
+                copyBtn.style.color = '#10b981';
+                setTimeout(() => {
+                    icon.className = 'fa-regular fa-copy';
+                    copyBtn.style.color = '';
+                }, 1500);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+        });
+    }
+
+    if (role === 'user') {
+        const editBtn = bubble.querySelector('.edit-btn');
+        if (editBtn) {
+            editBtn.addEventListener('click', () => {
+                const originalText = messageTextElem.textContent;
+                
+                // Create container for editing
+                const editContainer = document.createElement('div');
+                editContainer.className = 'inline-edit-container';
+                
+                const textarea = document.createElement('textarea');
+                textarea.className = 'inline-edit-textarea';
+                textarea.value = originalText;
+                
+                const btnGroup = document.createElement('div');
+                btnGroup.className = 'inline-edit-buttons';
+                
+                const saveBtn = document.createElement('button');
+                saveBtn.className = 'inline-btn save-btn';
+                saveBtn.textContent = 'Save & Submit';
+                
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'inline-btn cancel-btn';
+                cancelBtn.textContent = 'Cancel';
+                
+                btnGroup.appendChild(saveBtn);
+                btnGroup.appendChild(cancelBtn);
+                editContainer.appendChild(textarea);
+                editContainer.appendChild(btnGroup);
+                
+                // Hide text content and actions
+                messageTextElem.style.display = 'none';
+                const actionsDiv = bubble.querySelector('.message-actions');
+                if (actionsDiv) actionsDiv.style.display = 'none';
+                
+                bubble.querySelector('.bubble-text-content').appendChild(editContainer);
+                textarea.focus();
+                
+                // Cancel edit
+                cancelBtn.addEventListener('click', () => {
+                    editContainer.remove();
+                    messageTextElem.style.display = 'block';
+                    if (actionsDiv) actionsDiv.style.display = 'flex';
+                });
+                
+                // Save & Submit edit
+                saveBtn.addEventListener('click', () => {
+                    const updatedText = textarea.value.trim();
+                    if (!updatedText) return;
+                    
+                    editContainer.remove();
+                    messageTextElem.textContent = updatedText;
+                    messageTextElem.style.display = 'block';
+                    if (actionsDiv) actionsDiv.style.display = 'flex';
+                    
+                    // Delete all subsequent message bubbles
+                    let sibling = bubble.nextElementSibling;
+                    while (sibling) {
+                        const nextSibling = sibling.nextElementSibling;
+                        sibling.remove();
+                        sibling = nextSibling;
+                    }
+                    
+                    // Submit updated text
+                    document.getElementById('chat-input-box').value = updatedText;
+                    handleChatSubmit({ preventDefault: () => {} });
+                });
+            });
+        }
     }
     
     container.appendChild(bubble);
@@ -532,16 +650,7 @@ async function handleChatSubmit(e) {
             textNode.textContent = textNode.textContent.trim();
             textNode.classList.remove('typing');
 
-            if (sourcesToRender && sourcesToRender.length > 0) {
-                const citationDiv = document.createElement('div');
-                citationDiv.className = 'citation-panel';
-                citationDiv.innerHTML = `
-                    <span class="citation-title"><i class="fa-solid fa-book-open"></i> Sources:</span>
-                    ${sourcesToRender.map(p => `<span class="citation-chip">Page ${p}</span>`).join('')}
-                `;
-                bubbleTextContent.appendChild(citationDiv);
-                scrollToBottomIfNeeded();
-            }
+
 
             input.removeAttribute('disabled');
             document.getElementById('chat-send-btn').removeAttribute('disabled');

@@ -545,7 +545,7 @@ body {
     border-radius: 18px 18px 2px 18px; /* Rounded chat bubble style */
     padding: 12px 18px;
     width: fit-content; /* Dynamic width fitting content */
-    max-width: 70%;
+    max-width: 100%;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -907,5 +907,119 @@ body {
         opacity: 1;
         background-color: #10b981; /* Green pulse matching assistant avatar */
     }
+}
+
+/* User & Assistant Message Hover Actions & Inline Editor */
+.bubble-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.bubble-wrapper.user-wrapper {
+    align-items: flex-end; /* Align box and action buttons to the right */
+    max-width: 70%;
+}
+
+.bubble-wrapper.assistant-wrapper {
+    align-items: flex-start; /* Align box and action buttons to the left */
+    max-width: calc(100% - 51px);
+}
+
+.message-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.message-bubble.user:hover .message-actions,
+.message-bubble.assistant:hover .message-actions {
+    opacity: 1;
+}
+
+/* Hide actions during loading or streaming */
+.bubble-text-content.loading ~ .message-actions,
+.bubble-text-content:has(.message-text.typing) ~ .message-actions {
+    display: none !important;
+}
+
+.action-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.15s, background-color 0.15s;
+}
+
+.action-btn:hover {
+    color: var(--primary-color);
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.inline-edit-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    width: 100%;
+    min-width: 280px;
+}
+
+.inline-edit-textarea {
+    width: 100%;
+    min-height: 80px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    color: var(--text-color);
+    padding: 10px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: vertical;
+    outline: none;
+}
+
+.inline-edit-textarea:focus {
+    border-color: var(--primary-color);
+}
+
+.inline-edit-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.inline-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.15s, opacity 0.15s;
+}
+
+.inline-btn.save-btn {
+    background: var(--primary-color);
+    color: white;
+}
+
+.inline-btn.save-btn:hover {
+    opacity: 0.9;
+}
+
+.inline-btn.cancel-btn {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+}
+
+.inline-btn.cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--text-color);
 }
 
