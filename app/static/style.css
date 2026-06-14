@@ -991,12 +991,19 @@ body {
     display: flex;
     gap: 8px;
     margin-top: 6px;
-    opacity: 0;
     transition: opacity 0.2s ease-in-out;
 }
 
-.message-bubble.user:hover .message-actions,
-.message-bubble.assistant:hover .message-actions {
+/* User message actions: hidden by default, visible on hover */
+.message-bubble.user .message-actions {
+    opacity: 0;
+}
+.message-bubble.user:hover .message-actions {
+    opacity: 1;
+}
+
+/* Assistant (DB) message actions: always visible */
+.message-bubble.assistant .message-actions {
     opacity: 1;
 }
 
@@ -1020,6 +1027,24 @@ body {
 .action-btn:hover {
     color: var(--primary-color);
     background-color: rgba(255, 255, 255, 0.08);
+}
+
+.action-btn.like-btn.active {
+    color: var(--success-color);
+}
+
+.action-btn.like-btn.active:hover {
+    color: var(--success-color);
+    background-color: rgba(16, 185, 129, 0.1);
+}
+
+.action-btn.dislike-btn.active {
+    color: var(--error-color);
+}
+
+.action-btn.dislike-btn.active:hover {
+    color: var(--error-color);
+    background-color: rgba(239, 68, 68, 0.1);
 }
 
 .inline-edit-container {

@@ -268,10 +268,7 @@ async function handleFileUpload(file) {
         
         if (res.ok) {
             const doc = await res.json();
-            activeDocId = doc.id;
-            activeConversationId = null;
-            await loadDocuments();
-            resetChatWorkspace();
+            selectDocument(doc.id);
         } else {
             const data = await res.json();
             alert(`Upload failed: ${data.detail || 'Unknown error'}`);
@@ -312,8 +309,10 @@ function selectDocument(id) {
     loadDocuments(); // Rerender list with active state highlight
     
     // Enable input elements
-    document.getElementById('chat-input-box').removeAttribute('disabled');
+    const chatInput = document.getElementById('chat-input-box');
+    chatInput.removeAttribute('disabled');
     document.getElementById('chat-send-btn').removeAttribute('disabled');
+    chatInput.focus();
     
     // Switch chat state to empty board
     activeConversationId = null;
@@ -453,6 +452,8 @@ function appendMessageBubble(role, text, sources = null) {
         actionsHtml = `
             <div class="message-actions">
                 <button class="action-btn copy-btn" title="Copy message"><i class="fa-regular fa-copy"></i></button>
+                <button class="action-btn like-btn" title="Like response"><i class="fa-regular fa-thumbs-up"></i></button>
+                <button class="action-btn dislike-btn" title="Dislike response"><i class="fa-regular fa-thumbs-down"></i></button>
             </div>
         `;
     }
@@ -515,6 +516,41 @@ function appendMessageBubble(role, text, sources = null) {
                 console.error('Failed to copy text: ', err);
             }
         });
+    }
+
+    if (role === 'assistant') {
+        const likeBtn = bubble.querySelector('.like-btn');
+        const dislikeBtn = bubble.querySelector('.dislike-btn');
+        
+        if (likeBtn && dislikeBtn) {
+            likeBtn.addEventListener('click', () => {
+                const isAlreadyLiked = likeBtn.classList.contains('active');
+                if (isAlreadyLiked) {
+                    likeBtn.classList.remove('active');
+                    likeBtn.querySelector('i').className = 'fa-regular fa-thumbs-up';
+                } else {
+                    likeBtn.classList.add('active');
+                    likeBtn.querySelector('i').className = 'fa-solid fa-thumbs-up';
+                    // Deactivate dislike if active
+                    dislikeBtn.classList.remove('active');
+                    dislikeBtn.querySelector('i').className = 'fa-regular fa-thumbs-down';
+                }
+            });
+            
+            dislikeBtn.addEventListener('click', () => {
+                const isAlreadyDisliked = dislikeBtn.classList.contains('active');
+                if (isAlreadyDisliked) {
+                    dislikeBtn.classList.remove('active');
+                    dislikeBtn.querySelector('i').className = 'fa-regular fa-thumbs-down';
+                } else {
+                    dislikeBtn.classList.add('active');
+                    dislikeBtn.querySelector('i').className = 'fa-solid fa-thumbs-down';
+                    // Deactivate like if active
+                    likeBtn.classList.remove('active');
+                    likeBtn.querySelector('i').className = 'fa-regular fa-thumbs-up';
+                }
+            });
+        }
     }
 
     if (role === 'user') {
