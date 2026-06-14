@@ -13,7 +13,7 @@ Built using **FastAPI**, **ChromaDB**, and **Google Gemini API**, DocBrain is op
 - **Database & Vector Store**: SQLite (Metadata & Chat history), ChromaDB (Vector database)
 - **Security**: OAuth2 with JWT tokens, Bcrypt password encryption
 - **Deployment**: Docker, Docker Volumes for Persistent Storage
-- **Frontend**: Vanilla HTML5, CSS3 (Flexbox/Grid, Animations), JavaScript (ES6+, SSE Event Reader)
+- **Frontend**: Vanilla HTML5, CSS3 (Flexbox/Grid, Animations), JavaScript (ES6+, SSE Event Reader, Marked.js for Markdown parsing)
 
 ---
 
@@ -38,6 +38,9 @@ Built using **FastAPI**, **ChromaDB**, and **Google Gemini API**, DocBrain is op
 
 ### 5. **Interactive Split-Screen UI**
 - A responsive, glassmorphic layout featuring drag-and-drop file upload, dynamic format-specific icons, a live chat stream panel, and an inline collapsible **Document Preview Panel** displaying PDF and TXT contents inside the browser seamlessly.
+- **Auto-Selection & Autofocus**: Automatically selects the uploaded document and shifts the input cursor's focus to the chat textbox for immediate typing.
+- **Markdown Text Rendering**: Parses and formats Gemini response markdown (such as bold headings, lists, and code blocks) dynamically in the UI.
+- **Interactive Response Feedback**: Includes interactive ChatGPT-style Like (thumbs up) and Dislike (thumbs down) actions to rate AI answers.
 
 ---
 
