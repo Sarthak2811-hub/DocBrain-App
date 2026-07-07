@@ -105,7 +105,7 @@ DocBrain/
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/Sarthak2811-hub/DocBrain-App.git
+   git clone https://github.com/sarthakt28/DocBrain-App.git
    cd DocBrain-App
    ```
 
